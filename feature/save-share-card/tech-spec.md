@@ -161,7 +161,7 @@ function share(state) {
 | Integration | *(optional, nice-to-have)* `GET /api/card` still returns a 25-cell card with `FREE` center (guards against accidental server change). | Lightweight test on the exported Express `app`; **no new deps** — set `NODE_ENV=test` (existing guard skips auto-listen), `const srv = app.listen(0)`, `fetch` its assigned port, `srv.close()` in teardown. Not required for the Review gate; `generateCard` is already covered by `bingo.test.js`. |
 | E2E / manual | Reload-restore, name render, BINGO banner, share→Web Share vs download fallback, private-mode degradation. | **Chrome DevTools MCP UI validation** in Review per `docs/INTERACTIVE-UI-VALIDATION.md`. Canvas/share/localStorage are browser APIs not exercisable in `node --test`. Note: Web Share *with files* needs Chrome/Edge or iOS Safari ≥15.1; older browsers exercise the download fallback. |
 
-**Test runner change (in this Unit):** update `package.json` `test` script from `node --test test/**/*.test.js` to **`node --test`** (Node 20 auto-discovers `*.test.js`). The glob form depends on shell globstar and silently matches nothing under `sh`, which would make CI falsely "green." This is the one `package.json` change in this Unit.
+**Test runner change (in this Unit):** update `package.json` `test` script from `node --test test/**/*.test.js` to **`node --test test/*.test.js`** (single `*` expands in all POSIX shells including `sh`; `**` recursive glob requires bash globstar and silently matches nothing under `sh`). Scoping to `test/` also prevents node's auto-discovery from following the broken `.claude/skills` symlink in CI where the submodule is not checked out. This is the one `package.json` change in this Unit.
 
 ## Rollout & operations
 
