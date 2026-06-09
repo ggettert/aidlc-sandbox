@@ -37,6 +37,23 @@ claude /install-github-app
 ```
 This installs the GitHub App and writes the `CLAUDE_CODE_OAUTH_TOKEN` secret.
 
+## Features
+
+- 5×5 buzzword bingo card, randomised each session
+- **Auto-save** — card and marked squares survive a page refresh (same browser/device, no login)
+- **Optional display name** — shown on the card and on the shared image
+- **Share as image** — generates a PNG of your current card; uses the native share sheet on mobile, download fallback on desktop
+
+## Architecture decisions
+
+Significant decisions are recorded in [`adr/`](adr/):
+
+| ADR | Decision |
+|-----|----------|
+| [0001](adr/0001-client-only-persistence-via-localstorage.md) | Client-only persistence via `localStorage` |
+| [0002](adr/0002-pure-client-module-in-public-dir.md) | Pure client modules live in `public/` (no build step) |
+| [0003](adr/0003-canvas-png-for-share-image.md) | Share image via Canvas API + Web Share |
+
 ## Tests
 
 ```bash
