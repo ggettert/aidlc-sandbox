@@ -1,0 +1,82 @@
+name: AI-DLC Launch
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number
+        required: true
+      phase:
+        description: Phase (plan|design|build|review|ship)
+        required: true
+        default: plan
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  claude:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.event.label.name == 'aidlc_work:unstarted') ||
+      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, '/aidlc-launch'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Determine phase
+        id: phase
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PHASE: ${{ github.event.inputs.phase }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "phase=$INPUT_PHASE" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" = "issue_comment" ]; then
+            phase=$(echo "$COMMENT_BODY" | awk '/\/aidlc-launch/ {print $2}')
+            echo "phase=${phase:-plan}" >> "$GITHUB_OUTPUT"
+          else
+            echo "phase=plan" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Swap label unstarted → in_progress
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --remove-label "aidlc_work:unstarted" \
+            --add-label "aidlc_work:in_progress" || true
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are running the AI-DLC `/${{ steps.phase.outputs.phase }}` phase against issue #${{ github.event.issue.number || github.event.inputs.issue_number }} in this repo.
+
+            1. Read `.claude/skills/${{ steps.phase.outputs.phase }}/SKILL.md` and follow it.
+            2. Read `docs/AIDLC.md` for process context.
+            3. Read `AGENTS.md` for repo-specific conventions.
+            4. Execute the phase. Produce the deliverable named in the skill (and only that deliverable — hard stop at the phase boundary).
+            5. Post a summary comment on the issue when done.
+
+      - name: Clear in_progress label
+        if: always() && github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --remove-label "aidlc_work:in_progress" || true
