@@ -6,56 +6,255 @@
 <style>
   body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #eaeaea; max-width: 600px; margin: 2rem auto; padding: 1rem; text-align: center; }
   h1 { color: #ffd166; }
+  .controls { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; align-items: center; margin-top: 1rem; }
+  .name-wrap { display: flex; align-items: center; gap: 0.4rem; }
+  .name-wrap label { font-size: 0.85rem; color: #aaa; }
+  .name-wrap input { background: #16213e; border: 2px solid #0f3460; color: #eaeaea; padding: 0.45rem 0.6rem; border-radius: 6px; font-size: 0.85rem; width: 160px; }
+  .name-wrap input:focus { outline: none; border-color: #ffd166; }
   .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 1rem; }
   .cell { background: #16213e; border: 2px solid #0f3460; padding: 0.8rem 0.3rem; font-size: 0.75rem; cursor: pointer; min-height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: background 0.15s; }
   .cell:hover { background: #233a5e; }
   .cell.marked { background: #e94560; border-color: #ffd166; font-weight: bold; }
   .cell.free { background: #ffd166; color: #1a1a2e; font-weight: bold; }
   .winner { color: #ffd166; font-size: 1.5rem; margin-top: 1rem; }
-  button { background: #ffd166; color: #1a1a2e; border: none; padding: 0.6rem 1.2rem; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 1rem; }
+  button { background: #ffd166; color: #1a1a2e; border: none; padding: 0.6rem 1.2rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
 </style>
 </head>
 <body>
 <h1>🎰 AI Con Bingo</h1>
 <p>Tap each square when you hear it. Free space starts marked.</p>
-<button id="newCard">New Card</button>
+
+<div class="controls">
+  <div class="name-wrap">
+    <label for="playerName">Your name</label>
+    <input type="text" id="playerName" maxlength="40" placeholder="(optional)">
+  </div>
+  <button id="newCard">New Card</button>
+  <button id="shareCard">Share</button>
+</div>
+
 <div class="grid" id="grid"></div>
 <div class="winner" id="winner"></div>
-<script>
-let marked = Array(25).fill(false);
-async function loadCard() {
-  const res = await fetch('/api/card');
-  const { card } = await res.json();
-  marked = Array(25).fill(false);
-  marked[12] = true;
+
+<script type="module">
+import { STORAGE_KEY, NAME_MAX, buildState, serialize, deserialize, normalizeName } from './cardState.js';
+
+// ── win-line set (matches bingo.js — pre-existing inline copy per tech-spec) ──
+const LINES = [
+  [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
+  [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
+  [0,6,12,18,24],[4,8,12,16,20],
+];
+
+// ── localStorage helpers (try/catch: degrade gracefully in private mode) ──────
+function safeGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function safeSave(state) {
+  try { localStorage.setItem(STORAGE_KEY, serialize(state)); } catch { /* ignore */ }
+}
+function safeClear() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+}
+
+// ── state ─────────────────────────────────────────────────────────────────────
+let state = null;
+
+function currentName() {
+  return normalizeName(document.getElementById('playerName').value);
+}
+
+// ── render ────────────────────────────────────────────────────────────────────
+function render(s) {
+  state = s;
+  document.getElementById('playerName').value = s.name;
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
-  card.forEach((word, i) => {
+  s.card.forEach((word, i) => {
     const cell = document.createElement('div');
-    cell.className = 'cell' + (i === 12 ? ' free marked' : '');
+    let cls = 'cell';
+    if (i === 12) cls += ' free';
+    if (s.marked[i]) cls += ' marked';
+    cell.className = cls;
     cell.textContent = word;
     cell.onclick = () => toggle(i, cell);
     grid.appendChild(cell);
   });
-  document.getElementById('winner').textContent = '';
-}
-function toggle(i, cell) {
-  if (i === 12) return;
-  marked[i] = !marked[i];
-  cell.classList.toggle('marked');
   checkWin();
 }
-function checkWin() {
-  const lines = [
-    [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
-    [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
-    [0,6,12,18,24],[4,8,12,16,20]
-  ];
-  if (lines.some(l => l.every(i => marked[i]))) {
-    document.getElementById('winner').textContent = '🎉 BINGO!';
-  }
+
+// ── toggle ────────────────────────────────────────────────────────────────────
+function toggle(i, cell) {
+  if (i === 12) return;
+  state.marked[i] = !state.marked[i];
+  cell.classList.toggle('marked');
+  checkWin();
+  safeSave(state);
 }
-document.getElementById('newCard').onclick = loadCard;
+
+// ── win check ─────────────────────────────────────────────────────────────────
+function checkWin() {
+  const won = LINES.some(l => l.every(i => state.marked[i]));
+  document.getElementById('winner').textContent = won ? '🎉 BINGO!' : '';
+}
+
+// ── load: restore-or-fetch (Tech Spec §APIs & contracts) ─────────────────────
+async function loadCard() {
+  const saved = deserialize(safeGet(STORAGE_KEY));
+  if (saved) { render(saved); return; }
+  const { card } = await (await fetch('/api/card')).json();
+  const fresh = buildState(card, currentName());
+  render(fresh);
+  safeSave(fresh);
+}
+
+// ── new card ──────────────────────────────────────────────────────────────────
+document.getElementById('newCard').onclick = async () => {
+  safeClear();
+  const { card } = await (await fetch('/api/card')).json();
+  const fresh = buildState(card, currentName());
+  render(fresh);
+  safeSave(fresh);
+  document.getElementById('winner').textContent = '';
+};
+
+// ── name input: normalize + persist ──────────────────────────────────────────
+document.getElementById('playerName').oninput = (e) => {
+  if (!state) return;
+  state.name = normalizeName(e.target.value);
+  safeSave(state);
+};
+
+// ── canvas renderer (Tech Spec §UI/client) ────────────────────────────────────
+const W = 600, H = 720, CELL = 108, PAD = 12, TOP = 80, FOOT = 36;
+
+function drawCanvas(s) {
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  // header
+  ctx.fillStyle = '#ffd166';
+  ctx.font = 'bold 28px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🎰 AI Con Bingo', W / 2, 44);
+
+  if (s.name) {
+    ctx.font = '18px system-ui, sans-serif';
+    ctx.fillStyle = '#eaeaea';
+    ctx.fillText(s.name, W / 2, 68);
+  }
+
+  const won = LINES.some(l => l.every(i => s.marked[i]));
+
+  // grid
+  for (let i = 0; i < 25; i++) {
+    const col = i % 5, row = Math.floor(i / 5);
+    const x = PAD + col * (CELL + 4), y = TOP + row * (CELL + 4);
+
+    if (i === 12) {
+      ctx.fillStyle = '#ffd166';
+    } else if (s.marked[i]) {
+      ctx.fillStyle = '#e94560';
+    } else {
+      ctx.fillStyle = '#16213e';
+    }
+    roundRect(ctx, x, y, CELL, CELL, 6);
+    ctx.fill();
+
+    // border
+    ctx.strokeStyle = s.marked[i] ? '#ffd166' : '#0f3460';
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y, CELL, CELL, 6);
+    ctx.stroke();
+
+    // text
+    ctx.fillStyle = i === 12 ? '#1a1a2e' : '#eaeaea';
+    ctx.font = `bold ${i === 12 ? 14 : 11}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    wrapText(ctx, s.card[i], x + CELL / 2, y + CELL / 2, CELL - 8, 13);
+  }
+
+  // BINGO banner
+  if (won) {
+    ctx.fillStyle = 'rgba(26,26,46,0.75)';
+    ctx.fillRect(0, H / 2 - 40, W, 70);
+    ctx.fillStyle = '#ffd166';
+    ctx.font = 'bold 44px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎉 BINGO!', W / 2, H / 2 + 14);
+  }
+
+  // footer
+  ctx.fillStyle = '#555';
+  ctx.font = `11px system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('aiconusa.org', W / 2, H - 10);
+
+  return canvas;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, cx, cy, maxW, lineH) {
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && cur) {
+      lines.push(cur); cur = w;
+    } else { cur = test; }
+  }
+  if (cur) lines.push(cur);
+  const totalH = lines.length * lineH;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, cx, cy - totalH / 2 + lineH * i + lineH * 0.7, maxW);
+  });
+}
+
+// ── share (Tech Spec §APIs & contracts — toBlob async, AbortError handling) ──
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+document.getElementById('shareCard').onclick = () => {
+  if (!state) return;
+  const canvas = drawCanvas(state);
+  canvas.toBlob(async (blob) => {
+    const file = new File([blob], 'ai-con-bingo.png', { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'AI Con Bingo' });
+      } catch (e) {
+        if (e.name !== 'AbortError') downloadBlob(blob, 'ai-con-bingo.png');
+      }
+    } else {
+      downloadBlob(blob, 'ai-con-bingo.png');
+    }
+  }, 'image/png');
+};
+
+// ── init ──────────────────────────────────────────────────────────────────────
 loadCard();
 </script>
 </body>
