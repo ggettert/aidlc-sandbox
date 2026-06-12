@@ -20,6 +20,18 @@ test('BUZZWORDS includes "policy theater"', () => {
   assert.ok(BUZZWORDS.includes('policy theater'));
 });
 
+test('BUZZWORDS includes "human-in-the-loop cosplay"', () => {
+  assert.ok(BUZZWORDS.includes('human-in-the-loop cosplay'));
+});
+
+test('BUZZWORDS includes "speed worship"', () => {
+  assert.ok(BUZZWORDS.includes('speed worship'));
+});
+
+test('BUZZWORDS includes "governance after dark"', () => {
+  assert.ok(BUZZWORDS.includes('governance after dark'));
+});
+
 test('BUZZWORDS has no duplicate entries', () => {
   assert.strictEqual(new Set(BUZZWORDS).size, BUZZWORDS.length);
 });
