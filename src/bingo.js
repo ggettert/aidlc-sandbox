@@ -5,7 +5,8 @@ export const BUZZWORDS = [
   'policy theater',
   'human-in-the-loop cosplay', 'speed worship', 'governance after dark',
   'hallucination', 'eval', 'fine-tune', 'prompt injection', 'sandbox',
-  'multi-agent', 'autonomous', 'reasoning', 'tool use', 'memory',
+  'multi-agent', 'autonomous', 'off the rack', 'tailored', 'couture',
+  'reasoning', 'tool use', 'memory',
   'embedding', 'vector DB', 'token', 'inference', 'latency',
   'throughput', 'fallback', 'rollback', 'pilot', 'roadmap',
   'POC', 'production', 'foundation model', 'open source', 'closed source'
