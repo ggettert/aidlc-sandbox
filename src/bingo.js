@@ -2,6 +2,7 @@
 export const BUZZWORDS = [
   'agentic', 'guardrails', 'HITL', 'RAG', 'context engineering',
   'observability', 'MCP', 'fleet', 'orchestration', 'governance',
+  'policy theater',
   'hallucination', 'eval', 'fine-tune', 'prompt injection', 'sandbox',
   'multi-agent', 'autonomous', 'reasoning', 'tool use', 'memory',
   'embedding', 'vector DB', 'token', 'inference', 'latency',

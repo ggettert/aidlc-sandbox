@@ -16,6 +16,10 @@ test('generateCard cells (excl FREE) are drawn from BUZZWORDS', () => {
   });
 });
 
+test('BUZZWORDS includes "policy theater"', () => {
+  assert.ok(BUZZWORDS.includes('policy theater'));
+});
+
 test('isWinningCard detects a top row', () => {
   const marked = Array(25).fill(false);
   [0,1,2,3,4].forEach(i => marked[i] = true);
