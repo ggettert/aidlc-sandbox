@@ -32,6 +32,18 @@ test('BUZZWORDS includes "governance after dark"', () => {
   assert.ok(BUZZWORDS.includes('governance after dark'));
 });
 
+test('BUZZWORDS includes "off the rack"', () => {
+  assert.ok(BUZZWORDS.includes('off the rack'));
+});
+
+test('BUZZWORDS includes "tailored"', () => {
+  assert.ok(BUZZWORDS.includes('tailored'));
+});
+
+test('BUZZWORDS includes "couture"', () => {
+  assert.ok(BUZZWORDS.includes('couture'));
+});
+
 test('BUZZWORDS has no duplicate entries', () => {
   assert.strictEqual(new Set(BUZZWORDS).size, BUZZWORDS.length);
 });
