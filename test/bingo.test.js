@@ -20,6 +20,10 @@ test('BUZZWORDS includes "policy theater"', () => {
   assert.ok(BUZZWORDS.includes('policy theater'));
 });
 
+test('BUZZWORDS has no duplicate entries', () => {
+  assert.strictEqual(new Set(BUZZWORDS).size, BUZZWORDS.length);
+});
+
 test('isWinningCard detects a top row', () => {
   const marked = Array(25).fill(false);
   [0,1,2,3,4].forEach(i => marked[i] = true);
