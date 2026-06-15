@@ -36,6 +36,10 @@ test('BUZZWORDS includes "evidence > enthusiasm"', () => {
   assert.ok(BUZZWORDS.includes('evidence > enthusiasm'));
 });
 
+test('BUZZWORDS includes "HCP"', () => {
+  assert.ok(BUZZWORDS.includes('HCP'));
+});
+
 test('BUZZWORDS includes "off the rack"', () => {
   assert.ok(BUZZWORDS.includes('off the rack'));
 });
