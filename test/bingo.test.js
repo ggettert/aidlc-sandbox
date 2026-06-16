@@ -72,6 +72,18 @@ test('BUZZWORDS includes "context rot"', () => {
   assert.ok(BUZZWORDS.includes('context rot'));
 });
 
+test('BUZZWORDS includes "context window"', () => {
+  assert.ok(BUZZWORDS.includes('context window'));
+});
+
+test('BUZZWORDS includes "caveman"', () => {
+  assert.ok(BUZZWORDS.includes('caveman'));
+});
+
+test('BUZZWORDS includes "magic"', () => {
+  assert.ok(BUZZWORDS.includes('magic'));
+});
+
 test('BUZZWORDS has no duplicate entries', () => {
   assert.strictEqual(new Set(BUZZWORDS).size, BUZZWORDS.length);
 });
