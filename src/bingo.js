@@ -11,7 +11,7 @@ export const BUZZWORDS = [
   'embedding', 'vector DB', 'token', 'inference', 'latency',
   'throughput', 'fallback', 'rollback', 'pilot', 'roadmap',
   'POC', 'production', 'foundation model', 'open source', 'closed source',
-  'vibe coding', 'shadow IT for agents'
+  'vibe coding', 'shadow IT for agents', 'context rot'
 ];
 
 export function generateCard(seed = Date.now()) {
