@@ -68,6 +68,10 @@ test('BUZZWORDS includes "shadow IT for agents"', () => {
   assert.ok(BUZZWORDS.includes('shadow IT for agents'));
 });
 
+test('BUZZWORDS includes "huge context window"', () => {
+  assert.ok(BUZZWORDS.includes('huge context window'));
+});
+
 test('BUZZWORDS has no duplicate entries', () => {
   assert.strictEqual(new Set(BUZZWORDS).size, BUZZWORDS.length);
 });

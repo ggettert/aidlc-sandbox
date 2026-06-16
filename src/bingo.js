@@ -1,6 +1,6 @@
 // AI Con USA 2026 buzzword bingo
 export const BUZZWORDS = [
-  'agentic', 'guardrails', 'HITL', 'RAG', 'context engineering',
+  'agentic', 'guardrails', 'HITL', 'RAG', 'context engineering', 'huge context window',
   'observability', 'MCP', 'HCP', 'fleet', 'orchestration', 'governance',
   'policy theater',
   'human-in-the-loop cosplay', 'speed worship', 'governance after dark',
