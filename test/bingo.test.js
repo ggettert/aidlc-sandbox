@@ -56,6 +56,10 @@ test('BUZZWORDS includes "agent washing"', () => {
   assert.ok(BUZZWORDS.includes('agent washing'));
 });
 
+test('BUZZWORDS includes "agentic debt"', () => {
+  assert.ok(BUZZWORDS.includes('agentic debt'));
+});
+
 test('BUZZWORDS has no duplicate entries', () => {
   assert.strictEqual(new Set(BUZZWORDS).size, BUZZWORDS.length);
 });

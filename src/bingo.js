@@ -4,7 +4,7 @@ export const BUZZWORDS = [
   'observability', 'MCP', 'HCP', 'fleet', 'orchestration', 'governance',
   'policy theater',
   'human-in-the-loop cosplay', 'speed worship', 'governance after dark',
-  'evidence > enthusiasm', 'agent washing',
+  'evidence > enthusiasm', 'agent washing', 'agentic debt',
   'hallucination', 'eval', 'fine-tune', 'prompt injection', 'sandbox',
   'multi-agent', 'autonomous', 'off the rack', 'tailored', 'couture',
   'reasoning', 'tool use', 'memory',
