@@ -60,6 +60,10 @@ test('BUZZWORDS includes "agentic debt"', () => {
   assert.ok(BUZZWORDS.includes('agentic debt'));
 });
 
+test('BUZZWORDS includes "vibe coding"', () => {
+  assert.ok(BUZZWORDS.includes('vibe coding'));
+});
+
 test('BUZZWORDS has no duplicate entries', () => {
   assert.strictEqual(new Set(BUZZWORDS).size, BUZZWORDS.length);
 });
