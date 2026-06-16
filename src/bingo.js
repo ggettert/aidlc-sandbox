@@ -31,12 +31,16 @@ function hash(n) {
   return x - Math.floor(x);
 }
 
+// The 12 winning lines on a 5x5 card (rows, columns, diagonals).
+// Shared so both the card logic and the /api/status endpoint compute `won`
+// the same way (see public/index.html `LINES`).
+export const LINES = [
+  [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24], // rows
+  [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24], // cols
+  [0,6,12,18,24],[4,8,12,16,20] // diagonals
+];
+
 export function isWinningCard(marked) {
   // marked: 25-length boolean array
-  const lines = [
-    [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24], // rows
-    [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24], // cols
-    [0,6,12,18,24],[4,8,12,16,20] // diagonals
-  ];
-  return lines.some(line => line.every(i => marked[i]));
+  return LINES.some(line => line.every(i => marked[i]));
 }
