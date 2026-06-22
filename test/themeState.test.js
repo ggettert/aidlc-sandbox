@@ -10,6 +10,9 @@ import {
   readTheme,
   writeTheme,
   toggleTheme,
+  themeIcon,
+  applyTheme,
+  applyToggle,
 } from '../public/themeState.js';
 
 // Map-backed storage stub (matches the shape used in cardState tests).
@@ -18,6 +21,18 @@ const fakeStorage = () => {
   return {
     getItem: (k) => (m.has(k) ? m.get(k) : null),
     setItem: (k, v) => m.set(k, v),
+  };
+};
+
+// Minimal document stub: just the body + the #themeToggle button the wiring
+// touches. Lets us assert the DOM-application helpers without a real browser
+// (the interactive criteria the chrome-devtools MCP would otherwise cover).
+const fakeDoc = ({ initialClass = '', withButton = true } = {}) => {
+  const btn = { textContent: '(initial)' };
+  return {
+    body: { className: initialClass },
+    getElementById: (id) => (id === 'themeToggle' && withButton ? btn : null),
+    _btn: btn,
   };
 };
 
@@ -145,4 +160,74 @@ test('toggleTheme treats any non-light value as dark → light', () => {
   // never produce "theme-undefined".
   assert.equal(toggleTheme('blue'), 'light');
   assert.equal(toggleTheme(undefined), 'light');
+});
+
+// ── themeIcon ────────────────────────────────────────────────────────────────
+
+test('themeIcon: ☀️ in dark, 🌙 in light', () => {
+  assert.equal(themeIcon('dark'), '☀️');
+  assert.equal(themeIcon('light'), '🌙');
+});
+
+// ── applyTheme (DOM wiring — first load / reload no-flash criteria) ───────────
+
+test('applyTheme defaults to dark on empty storage (body class + glyph)', () => {
+  const doc = fakeDoc();
+  const theme = applyTheme(doc, fakeStorage());
+  assert.equal(theme, 'dark');
+  assert.equal(doc.body.className, 'theme-dark');
+  assert.equal(doc._btn.textContent, '☀️');
+});
+
+test('applyTheme renders persisted light theme (class theme-light, glyph 🌙)', () => {
+  const s = fakeStorage();
+  s.setItem(THEME_KEY, 'light');
+  const doc = fakeDoc();
+  assert.equal(applyTheme(doc, s), 'light');
+  assert.equal(doc.body.className, 'theme-light');
+  assert.equal(doc._btn.textContent, '🌙');
+});
+
+test('applyTheme tolerates a missing toggle button', () => {
+  const doc = fakeDoc({ withButton: false });
+  assert.doesNotThrow(() => applyTheme(doc, fakeStorage()));
+  assert.equal(doc.body.className, 'theme-dark');
+});
+
+// ── applyToggle (DOM wiring — click swaps + persists criteria) ────────────────
+
+test('applyToggle flips dark → light, persists, and updates body + glyph', () => {
+  const s = fakeStorage(); // empty → reads as dark
+  const doc = fakeDoc({ initialClass: 'theme-dark' });
+  const next = applyToggle(doc, s);
+  assert.equal(next, 'light');
+  assert.equal(doc.body.className, 'theme-light');
+  assert.equal(doc._btn.textContent, '🌙');
+  assert.equal(s.getItem(THEME_KEY), 'light');
+});
+
+test('applyToggle flips light → dark, persists, and updates body + glyph', () => {
+  const s = fakeStorage();
+  s.setItem(THEME_KEY, 'light');
+  const doc = fakeDoc({ initialClass: 'theme-light' });
+  const next = applyToggle(doc, s);
+  assert.equal(next, 'dark');
+  assert.equal(doc.body.className, 'theme-dark');
+  assert.equal(doc._btn.textContent, '☀️');
+  assert.equal(s.getItem(THEME_KEY), 'dark');
+});
+
+test('applyToggle still updates the DOM when persistence throws (private mode)', () => {
+  // getItem reads as dark (returns null); setItem throws as in private mode.
+  const throwingStorage = {
+    getItem: () => null,
+    setItem() {
+      throw new Error('QuotaExceededError: storage disabled');
+    },
+  };
+  const doc = fakeDoc({ initialClass: 'theme-dark' });
+  const next = applyToggle(doc, throwingStorage);
+  assert.equal(next, 'light');
+  assert.equal(doc.body.className, 'theme-light');
+  assert.equal(doc._btn.textContent, '🌙');
 });

@@ -38,3 +38,37 @@ export function writeTheme(storage, theme) {
 export function toggleTheme(current) {
   return current === 'light' ? 'dark' : 'light';
 }
+
+// The toggle button glyph for a given theme: ☀️ in dark (tap to go light),
+// 🌙 in light (tap to go dark). Single source of truth so index.html's wiring
+// and the no-flash inline script don't drift.
+export function themeIcon(theme) {
+  return theme === 'dark' ? '☀️' : '🌙';
+}
+
+// Apply the persisted theme to the document: set the <body> class and sync the
+// toggle glyph. `doc`/`storage` are injected so this is unit-testable with
+// stubs (same DI style as readTheme). Tolerates a missing toggle button.
+export function applyTheme(doc, storage) {
+  const theme = readTheme(storage);
+  doc.body.className = 'theme-' + theme;
+  const btn = doc.getElementById('themeToggle');
+  if (btn) btn.textContent = themeIcon(theme);
+  return theme;
+}
+
+// Flip to the opposite theme, persist it (best-effort — private mode may block
+// the write), and re-apply to the document. Returns the new theme. The DOM is
+// always updated even if persistence fails, so the toggle still works visually.
+export function applyToggle(doc, storage) {
+  const next = toggleTheme(readTheme(storage));
+  try {
+    writeTheme(storage, next);
+  } catch {
+    /* localStorage blocked (private mode): apply visually, just don't persist */
+  }
+  doc.body.className = 'theme-' + next;
+  const btn = doc.getElementById('themeToggle');
+  if (btn) btn.textContent = themeIcon(next);
+  return next;
+}

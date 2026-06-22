@@ -74,30 +74,32 @@
   <button id="shareCard">Share</button>
   <button id="themeToggle" aria-label="Toggle light or dark theme" title="Toggle light/dark theme">☀️</button>
 </div>
+<script>
+  // No-flash icon: the pre-paint script above already applied the theme class,
+  // but the button glyph is still the markup default (☀️). Correct it here —
+  // synchronously, before paint, now that #themeToggle exists in the DOM — so a
+  // persisted "light" theme shows 🌙 immediately instead of lagging until the
+  // deferred module runs applyTheme(). Mirrors themeState.js's themeIcon() map.
+  (function () {
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.textContent = document.body.className === 'theme-light' ? '🌙' : '☀️';
+  })();
+</script>
 
 <div class="grid" id="grid"></div>
 <div class="winner" id="winner"></div>
 
 <script type="module">
 import { STORAGE_KEY, NAME_MAX, buildState, serialize, deserialize, normalizeName } from './cardState.js';
-import { readTheme, writeTheme, toggleTheme } from './themeState.js';
+import { applyTheme, applyToggle } from './themeState.js';
 
 // ── theme toggle (Tech Spec §Wiring) ──────────────────────────────────────────
-// The body class is also set by the inline no-flash script in <body>; this is a
-// safety net for when that script didn't run, plus it syncs the button label.
-const themeToggle = document.getElementById('themeToggle');
-function themeIcon(theme) { return theme === 'dark' ? '☀️' : '🌙'; }
-(function initTheme() {
-  const theme = readTheme(localStorage);
-  document.body.className = 'theme-' + theme;
-  themeToggle.textContent = themeIcon(theme);
-})();
-themeToggle.addEventListener('click', () => {
-  const next = toggleTheme(readTheme(localStorage));
-  try { writeTheme(localStorage, next); } catch { /* private mode: won't persist */ }
-  document.body.className = 'theme-' + next;
-  themeToggle.textContent = themeIcon(next);
-});
+// The body class is also set by the inline no-flash scripts in <body>; this is a
+// safety net for when those didn't run, and it keeps themeState.js as the single
+// source of truth for the class + glyph (no duplicated logic here).
+applyTheme(document, localStorage);
+document.getElementById('themeToggle')
+  .addEventListener('click', () => applyToggle(document, localStorage));
 
 // ── win-line set (matches bingo.js — pre-existing inline copy per tech-spec) ──
 const LINES = [
