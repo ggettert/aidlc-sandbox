@@ -4,23 +4,64 @@
 <meta charset="UTF-8">
 <title>AI Con Bingo</title>
 <style>
-  body { font-family: system-ui, sans-serif; background: #0d2b2b; color: #eaeaea; max-width: 600px; margin: 2rem auto; padding: 1rem; text-align: center; }
-  h1 { color: #2ec4b6; }
+  /* ── Layout (theme-independent) ─────────────────────────────────────────── */
+  body { font-family: system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 1rem; text-align: center; }
   .controls { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; align-items: center; margin-top: 1rem; }
   .name-wrap { display: flex; align-items: center; gap: 0.4rem; }
-  .name-wrap label { font-size: 0.85rem; color: #aaa; }
-  .name-wrap input { background: #123c3c; border: 2px solid #1c5757; color: #eaeaea; padding: 0.45rem 0.6rem; border-radius: 6px; font-size: 0.85rem; width: 160px; }
-  .name-wrap input:focus { outline: none; border-color: #2ec4b6; }
+  .name-wrap label { font-size: 0.85rem; }
+  .name-wrap input { border: 2px solid; padding: 0.45rem 0.6rem; border-radius: 6px; font-size: 0.85rem; width: 160px; }
+  .name-wrap input:focus { outline: none; }
   .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 1rem; }
-  .cell { background: #123c3c; border: 2px solid #1c5757; padding: 0.8rem 0.3rem; font-size: 0.75rem; cursor: pointer; min-height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: background 0.15s; }
-  .cell:hover { background: #1f5e5e; }
-  .cell.marked { background: #ff5da2; border-color: #ff8cc6; color: #0d2b2b; font-weight: bold; }
-  .cell.free { background: #ff5da2; color: #0d2b2b; font-weight: bold; }
-  .winner { color: #ff5da2; font-size: 1.5rem; margin-top: 1rem; }
-  button { background: #2ec4b6; color: #0d2b2b; border: none; padding: 0.6rem 1.2rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+  .cell { border: 2px solid; padding: 0.8rem 0.3rem; font-size: 0.75rem; cursor: pointer; min-height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: background 0.15s; }
+  .cell.marked { font-weight: bold; }
+  .cell.free { font-weight: bold; }
+  .winner { font-size: 1.5rem; margin-top: 1rem; }
+  button { border: none; padding: 0.6rem 1.2rem; font-weight: bold; border-radius: 6px; cursor: pointer; }
+  #themeToggle { line-height: 1; font-size: 1rem; }
+
+  /* ── Dark theme (default — preserves the existing pink+teal look) ────────── */
+  body.theme-dark { background: #0d2b2b; color: #eaeaea; }
+  body.theme-dark h1 { color: #2ec4b6; }
+  body.theme-dark .name-wrap label { color: #aaa; }
+  body.theme-dark .name-wrap input { background: #123c3c; border-color: #1c5757; color: #eaeaea; }
+  body.theme-dark .name-wrap input:focus { border-color: #2ec4b6; }
+  body.theme-dark .cell { background: #123c3c; border-color: #1c5757; }
+  body.theme-dark .cell:hover { background: #1f5e5e; }
+  body.theme-dark .cell.marked { background: #ff5da2; border-color: #ff8cc6; color: #0d2b2b; }
+  body.theme-dark .cell.free { background: #ff5da2; color: #0d2b2b; }
+  body.theme-dark .winner { color: #ff5da2; }
+  body.theme-dark button { background: #2ec4b6; color: #0d2b2b; }
+
+  /* ── Light theme (high-contrast accessible palette) ──────────────────────── */
+  body.theme-light { background: #fafafa; color: #1a1a1a; }
+  body.theme-light h1 { color: #e91e63; }
+  body.theme-light .name-wrap label { color: #555; }
+  body.theme-light .name-wrap input { background: #ffffff; border-color: #d0d0d0; color: #1a1a1a; }
+  body.theme-light .name-wrap input:focus { border-color: #e91e63; }
+  body.theme-light .cell { background: #ffffff; border-color: #d0d0d0; }
+  body.theme-light .cell:hover { background: #f0f0f0; }
+  body.theme-light .cell.marked { background: #e91e63; border-color: #e91e63; color: #ffffff; }
+  body.theme-light .cell.free { background: #e91e63; border-color: #e91e63; color: #ffffff; }
+  body.theme-light .winner { color: #e91e63; }
+  body.theme-light button { background: #e91e63; color: #ffffff; }
 </style>
 </head>
 <body>
+<script>
+  // No-flash theme: apply the persisted theme class before the page paints.
+  // Kept inline + classic (not a module) so it runs synchronously here, ahead
+  // of paint — module scripts are deferred and would flash the default theme
+  // first. themeState.js stays the single source of truth for the toggle
+  // logic; this snippet only mirrors readTheme's key/default/validation.
+  (function () {
+    var DEFAULT = 'dark', VALID = ['light', 'dark'], theme = DEFAULT;
+    try {
+      var stored = localStorage.getItem('aiconbingo:theme:v1');
+      if (VALID.indexOf(stored) !== -1) theme = stored;
+    } catch (e) { /* localStorage blocked (private mode): use default */ }
+    document.body.className = 'theme-' + theme;
+  })();
+</script>
 <h1>🎰 AI Con Bingo</h1>
 <p>Tap each square when you hear it. Free space starts marked.</p>
 
@@ -31,13 +72,34 @@
   </div>
   <button id="newCard">New Card</button>
   <button id="shareCard">Share</button>
+  <button id="themeToggle" aria-label="Toggle light or dark theme" title="Toggle light/dark theme">☀️</button>
 </div>
+<script>
+  // No-flash icon: the pre-paint script above already applied the theme class,
+  // but the button glyph is still the markup default (☀️). Correct it here —
+  // synchronously, before paint, now that #themeToggle exists in the DOM — so a
+  // persisted "light" theme shows 🌙 immediately instead of lagging until the
+  // deferred module runs applyTheme(). Mirrors themeState.js's themeIcon() map.
+  (function () {
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.textContent = document.body.className === 'theme-light' ? '🌙' : '☀️';
+  })();
+</script>
 
 <div class="grid" id="grid"></div>
 <div class="winner" id="winner"></div>
 
 <script type="module">
 import { STORAGE_KEY, NAME_MAX, buildState, serialize, deserialize, normalizeName } from './cardState.js';
+import { applyTheme, applyToggle } from './themeState.js';
+
+// ── theme toggle (Tech Spec §Wiring) ──────────────────────────────────────────
+// The body class is also set by the inline no-flash scripts in <body>; this is a
+// safety net for when those didn't run, and it keeps themeState.js as the single
+// source of truth for the class + glyph (no duplicated logic here).
+applyTheme(document, localStorage);
+document.getElementById('themeToggle')
+  .addEventListener('click', () => applyToggle(document, localStorage));
 
 // ── win-line set (matches bingo.js — pre-existing inline copy per tech-spec) ──
 const LINES = [
